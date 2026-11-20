@@ -23,7 +23,7 @@ st.set_page_config(
 DATA_FILE = Path(__file__).parent / "data.json"
 DEFAULT_ADMIN_PASSWORD = "cambiami-subito"
 
-FESTEGGIATE_DEFAULT = ["DANILA", "MIRIANA", "MARTA", "GIORGIA"]
+FESTEGGIATE_DEFAULT = ["DANILA", "MIRIANA", "MARTA", "GIORGIA", "PIETRO"]
 RULES_DEFAULT = [
     {"desc": "Proclamazione con lode", "points": 50},
     {"desc": "Cade la corona d'alloro", "points": -20},
@@ -53,7 +53,7 @@ LOCK = _get_lock()
 
 def default_data():
     return {
-        "festeggiate": list(FESTEGGIATE_DEFAULT),
+        "festeggiati": list(FESTEGGIATE_DEFAULT),
         "rules": [dict(r) for r in RULES_DEFAULT],
         "teams": [],
         "events": [],
@@ -138,10 +138,10 @@ def raddoppio_attivo(data):
 def compute_scores(data):
     """Restituisce (punti per festeggiata, classifica ordinata)."""
     double = raddoppio_attivo(data)
-    fest_pts = {f: 0 for f in data["festeggiate"]}
+    fest_pts = {f: 0 for f in data["festeggiati"]}
     team_bonus = {}
     for e in data["events"]:
-        if e["type"] == "festeggiata":
+        if e["type"] == "festeggiati":
             for f in e["targets"]:
                 fest_pts[f] = fest_pts.get(f, 0) + e["points"]
         else:
@@ -150,7 +150,7 @@ def compute_scores(data):
     rows = []
     for t in data["teams"]:
         score = team_bonus.get(t["id"], 0)
-        for f in t["festeggiate"]:
+        for f in t["festeggiati"]:
             mult = 2 if (double and f == t["captain"]) else 1
             score += fest_pts.get(f, 0) * mult
         rows.append({"team": t, "score": score})
@@ -162,11 +162,11 @@ def compute_scores(data):
 
 
 def festeggiate_label(team):
-    return ", ".join(f"{f} ⭐" if f == team["captain"] else f for f in team["festeggiate"])
+    return ", ".join(f"{f} ⭐" if f == team["captain"] else f for f in team["festeggiati"])
 
 
 def describe_event(e, teams_by_id):
-    if e["type"] == "festeggiata":
+    if e["type"] == "festeggiati":
         target = " + ".join(e["targets"])
     else:
         team = teams_by_id.get(e["team_id"])
@@ -181,9 +181,9 @@ def valida_squadra(data, name, owner, chosen, captain, exclude_id=None):
     if not owner.strip():
         errors.append("Inserisci il tuo nome.")
     if len(chosen) != 2:
-        errors.append("Devi scegliere esattamente 2 festeggiate.")
+        errors.append("Devi scegliere esattamente 3 festeggiati.")
     elif captain not in chosen:
-        errors.append("Scegli la capitana tra le 2 festeggiate.")
+        errors.append("Scegli il capitano tra i 3 festeggiati.")
     others = [t for t in data["teams"] if t["id"] != exclude_id]
     if owner.strip() and any(t["owner_key"] == norm(owner) for t in others):
         errors.append("Hai già creato una squadra: puoi averne una sola. Usa 'Modifica la mia squadra'.")
@@ -194,17 +194,17 @@ def valida_squadra(data, name, owner, chosen, captain, exclude_id=None):
 
 def scegli_festeggiate(data, key, default_fest=None, default_capt=None):
     chosen = st.multiselect(
-        "Scegli esattamente 2 festeggiate:",
-        data["festeggiate"],
+        "Scegli esattamente 3 festeggiati:",
+        data["festeggiati"],
         default=default_fest or [],
-        max_selections=2,
+        max_selections=3,
         key=f"{key}_fest",
     )
     captain = None
-    if len(chosen) == 2:
+    if len(chosen) == 3:
         idx = chosen.index(default_capt) if default_capt in chosen else 0
         captain = st.radio(
-            "Chi è la tua capitana? (a fine gioco i suoi punti valgono doppio)",
+            "Chi è il tuo capitano? (a fine gioco i suoi punti valgono doppio)",
             chosen,
             index=idx,
             horizontal=True,
@@ -265,7 +265,7 @@ def classifica_live():
                 {
                     "Pos": f"{medals.get(r['pos'], '')} {r['pos']}".strip(),
                     "Squadra": r["team"]["name"],
-                    "Festeggiate": festeggiate_label(r["team"]),
+                    "Festeggiati": festeggiate_label(r["team"]),
                     "Punti": r["score"],
                 }
                 for r in rows
@@ -273,13 +273,13 @@ def classifica_live():
         )
         st.dataframe(df, hide_index=True)
         if raddoppio_attivo(data):
-            st.caption("⭐ = capitana, i suoi punti sono già conteggiati doppi.")
+            st.caption("⭐ = capitano, i suoi punti sono già conteggiati doppi.")
         else:
-            st.caption("⭐ = capitana, i suoi punti verranno raddoppiati a fine gioco.")
+            st.caption("⭐ = capitano, i suoi punti verranno raddoppiati a fine gioco.")
 
-    st.subheader("🎓 Punti delle festeggiate")
-    cols = st.columns(len(data["festeggiate"]) or 1)
-    for col, f in zip(cols, data["festeggiate"]):
+    st.subheader("🎓 Punti dei festeggiati")
+    cols = st.columns(len(data["festeggiati"]) or 1)
+    for col, f in zip(cols, data["festeggiati"]):
         col.metric(f, fest_pts.get(f, 0))
 
     st.subheader("📣 Ultimi eventi")
@@ -333,7 +333,7 @@ def form_nuova_squadra(data):
                 "owner_key": norm(owner),
                 "salt": salt,
                 "pin_hash": hash_pin(pin, salt),
-                "festeggiate": chosen,
+                "festeggiati": chosen,
                 "captain": captain,
                 "created": now_str(),
                 "updated": now_str(),
@@ -347,7 +347,7 @@ def form_nuova_squadra(data):
             st.error(str(ex))
         else:
             st.session_state.my_team_id = team_id
-            st.success(f"Squadra **{name.strip()}** registrata! Capitana: {captain} ⭐")
+            st.success(f"Squadra **{name.strip()}** registrata! Capitano: {captain} ⭐")
             st.balloons()
 
 
@@ -372,7 +372,7 @@ def form_modifica_squadra(data):
     st.info(f"Stai modificando la squadra di **{team['owner']}**")
     name = st.text_input("Nome della squadra", value=team["name"], max_chars=40,
                          key=f"edit_name_{team['id']}")
-    chosen, captain = scegli_festeggiate(data, f"edit_{team['id']}", team["festeggiate"], team["captain"])
+    chosen, captain = scegli_festeggiate(data, f"edit_{team['id']}", team["festeggiati"], team["captain"])
 
     c1, c2 = st.columns(2)
     if c1.button("Salva modifiche 💾", type="primary"):
@@ -406,7 +406,7 @@ def page_squadra():
         st.warning("🔒 Le iscrizioni sono chiuse: le squadre non si possono più creare né modificare. "
                    "Segui la classifica live!")
         return
-    st.markdown("Scegli **2 festeggiate** e nomina una **capitana**: a fine gioco i suoi punti valgono doppio. "
+    st.markdown("Scegli **3 festeggiati** e nomina un **capitano**: a fine gioco i suoi punti valgono doppio. "
                 "Puoi creare **una sola squadra** e modificarla finché le iscrizioni restano aperte.")
     tab_new, tab_edit = st.tabs(["✨ Crea squadra", "✏️ Modifica la mia squadra"])
     with tab_new:
@@ -423,14 +423,28 @@ def page_regolamento():
     st.title("📜 Regolamento")
     st.markdown(
         f"""
-Il Fantalaurea si gioca **dal 1 al 4 dicembre** (inclusi): discussioni, proclamazioni e festa.
+Benvenuti al FantaLaurea!
 
 **Come si gioca**
-1. Crea la tua squadra scegliendo **2 festeggiate** tra {", ".join(data["festeggiate"])}.
-2. Nomina una delle due **capitana ⭐**: a fine gioco tutti i suoi punti (bonus e malus) vengono **raddoppiati**.
-3. Ogni persona può creare **una sola squadra**, modificabile finché l'admin non chiude le iscrizioni.
+1. Crea la tua squadra scegliendo **3 festeggiati** tra {", ".join(data["festeggiati"])}.
+2. Nomina una dei 3 **capitano ⭐**: a fine gioco tutti i suoi punti (bonus e malus) vengono **raddoppiati**.
+3. Ogni persona può creare **una sola squadra**, modificabile finché non si chiudono le iscrizioni.
 4. Ogni volta che una festeggiata fa scattare un bonus o un malus, i punti vanno a tutte le squadre che l'hanno scelta.
 5. Al termine della festa vince la squadra con più punti (in caso di parità, vincono a pari merito).
+
+📅 Date e Scadenze
+- Chiusura iscrizioni: Hai tempo fino alle 23:59 del 30 novembre per creare e salvare la tua squadra. Oltre questo termine, le formazioni verranno bloccate.
+- Inizio e fine gara: La competizione inizia ufficialmente il 1° dicembre e si conclude al termine dei festeggiamenti del 4 dicembre.
+
+📹 Validazione dei Bonus e Malus
+- I punti vengono assegnati in base a ciò che accade prima, durante e dopo la discussione, la proclamazione e la festa del 4 dicembre.
+- La regola della prova video: Perché un bonus o un malus sia valido, l'azione deve essere documentata. I festeggiati (o i testimoni presenti) devono inviare un video o una foto chiara sul gruppo dedicato alla laurea per certificare l'accaduto.
+- Eventi a distanza: Questa regola vale in modo particolare per tutte le azioni compiute dal 1° dicembre in poi che non avvengono in presenza di tutti durante la discussione, la proclamazione o la festa finale. Senza prova sul gruppo, il punto non verrà assegnato!
+
+NOTA:
+In caso di dubbi sull'assegnazione di un bonus o di un malus, il giudizio insindacabile spetta agli organizzatori del gioco (o al "VAR" del gruppo).
+Vince chi totalizza il punteggio più alto al termine dei festeggiamenti del 4 dicembre. In caso di parità, vince chi ha scelto il Capitano che ha ottenuto più punti singoli.
+
 
 **Bonus e Malus**
 """
@@ -453,10 +467,10 @@ def admin_assegna_punti(data):
     teams = data["teams"]
     rule_labels = [f"{r['desc']} ({r['points']:+d})" for r in rules] + ["✍️ Evento personalizzato"]
 
-    target_type = st.radio("Assegna a:", ["Festeggiata/e", "Squadra specifica"], horizontal=True)
+    target_type = st.radio("Assegna a:", ["Festeggiato/i", "Squadra specifica"], horizontal=True)
     targets, team_id = [], None
-    if target_type == "Festeggiata/e":
-        targets = st.multiselect("Festeggiata/e protagonista/e:", data["festeggiate"])
+    if target_type == "Festeggiato/i":
+        targets = st.multiselect("Festeggiato/i protagonista/i:", data["festeggiati"])
     else:
         if not teams:
             st.info("Nessuna squadra iscritta.")
@@ -472,8 +486,8 @@ def admin_assegna_punti(data):
         desc, pts = rules[choice]["desc"], rules[choice]["points"]
 
     if st.button("✅ Registra evento", type="primary"):
-        if target_type == "Festeggiata/e" and not targets:
-            st.error("Scegli almeno una festeggiata.")
+        if target_type == "Festeggiato/i" and not targets:
+            st.error("Scegli almeno un festeggiato.")
             return
         if not desc.strip():
             st.error("Inserisci una descrizione.")
@@ -481,7 +495,7 @@ def admin_assegna_punti(data):
         event = {
             "id": uuid.uuid4().hex,
             "ts": now_str(),
-            "type": "festeggiata" if target_type == "Festeggiata/e" else "squadra",
+            "type": "festeggiati" if target_type == "Festeggiato/i" else "squadra",
             "targets": targets,
             "team_id": team_id,
             "desc": desc.strip(),
@@ -516,7 +530,7 @@ def admin_squadre(data):
             {
                 "Squadra": r["team"]["name"],
                 "Creata da": r["team"]["owner"],
-                "Festeggiate": festeggiate_label(r["team"]),
+                "Festeggiati": festeggiate_label(r["team"]),
                 "Punti": r["score"],
                 "Ultima modifica": r["team"]["updated"],
             }
@@ -568,7 +582,7 @@ def admin_impostazioni(data):
     s = data["settings"]
     with st.form("settings_form"):
         aperte = st.toggle("Iscrizioni aperte (creazione e modifica squadre)", value=s["iscrizioni_aperte"])
-        raddoppio = st.toggle("Mostra subito il raddoppio della capitana in classifica", value=s["raddoppio_live"],
+        raddoppio = st.toggle("Mostra subito il raddoppio del capitano in classifica", value=s["raddoppio_live"],
                               help="Se disattivo, il raddoppio viene applicato quando dichiari il gioco concluso.")
         concluso = st.toggle("Gioco concluso (mostra i vincitori)", value=s["gioco_concluso"])
         if st.form_submit_button("💾 Salva impostazioni"):
