@@ -24,24 +24,57 @@ DATA_FILE = Path(__file__).parent / "data.json"
 DEFAULT_ADMIN_PASSWORD = "cambiami-subito"
 
 FESTEGGIATE_DEFAULT = ["DANILA", "MIRIANA", "MARTA", "GIORGIA", "PIETRO"]
+
+# QUI VANNO INSERITI MALUS, BONUS, REGOLE PERSONALI E DEL GIORNO
 RULES_DEFAULT = [
+    # --- Regole base ---
     {"desc": "Proclamazione con lode", "points": 50},
     {"desc": "Cade la corona d'alloro", "points": -20},
     {"desc": "Pronuncia la parola 'Ansia' nei primi 5 minuti", "points": 15},
     {"desc": "Commuove almeno un parente stretto", "points": 30},
     {"desc": "Arriva in ritardo alla discussione", "points": -30},
-    {"desc": "Festeggiata brilla/allegra prima della proclamazione", "points": 40},
+    {"desc": "Festeggiata/o brilla/allegra prima della proclamazione", "points": 40},
+
+    # --- Malus ---
+    {"desc": "Scivolone / gaffe della giornata (rovescia qualcosa, sbaglia strada, perde un oggetto o gaffe epica)", "points": -10},
+    {"desc": "Voto sotto le aspettative (inferiore a quello pronosticato)", "points": -10},
+    {"desc": "Panico da microfono (si blocca, perde il filo o va in confusione per più di 15 secondi)", "points": -5},
+    {"desc": "“Non saprei / non mi ricordo” a una domanda della commissione", "points": -5},
+    {"desc": "Ritardo rispetto all'orario previsto o fa correre il gruppo", "points": -5},
+    {"desc": "Disastro tecnico (slide non si aprono, formato sballato o cade connessione/proiezione)", "points": -5},
+
+    # --- Bonus ---
+    {"desc": "L’intervista improvvisata (ferma un passante e chiede un consiglio di vita con foto/video)", "points": 15},
+    {"desc": "Il “Dottore!” in pubblico (fa un inchino o giravolta quando viene nominata/o Dottoressa/Dottore)", "points": 10},
+    {"desc": "Lode d’oro (ottiene il 110 e lode)", "points": 15},
+    {"desc": "Voto top (voto finale tra 107 e 109)", "points": 10},
+    {"desc": "Applausi a scena aperta o complimenti espliciti della commissione", "points": 5},
+    {"desc": "Puntualità svizzera (in aula pronta/o con almeno 15 minuti di anticipo)", "points": 5},
+    {"desc": "Zero intoppi tecnici (slide/video funzionano al primo colpo)", "points": 5},
+    {"desc": "Risposta da manuale a una domanda difficile della commissione", "points": 5},
+    {"desc": "La parola magica (inizia qualsiasi brindisi con la parola 'capibara')", "points": 10},
+    {"desc": "Cambio d’abito o accessorio segreto scelto dal gruppo mostrato a fine discussione", "points": 10},
+
+    # --- Bonus / Malus personali ---
+    {"desc": "[MIRIANA] Parla di Risparmio Casa ('il paese delle meraviglie')", "points": 5},
+    {"desc": "[MIRIANA] Parla delle disavventure per trovare il vestito perfetto", "points": -5},
+    {"desc": "[DANILA] Dice di avere mal di testa", "points": -5},
+    {"desc": "[DANILA] Si lamenta di Alessandro", "points": 5},
+    {"desc": "[MARTA] Dice 'paga Miroglio'", "points": 5},
+    {"desc": "[MARTA] Dice che il ladro vive a Moncalieri", "points": -5},
+    {"desc": "[GIORGIA] Dice 'belin' o 'zio belin' (tutte le varianti)", "points": 5},
+    {"desc": "[GIORGIA] Parla dei suoi affari (es. lamentela o entusiasmo per il prezzo di un volo)", "points": -5},
+    {"desc": "[PIETRO] Dice 'gas'", "points": 5},
+    {"desc": "[PIETRO] Bonus/malus personale extra (da definire)", "points": 0},
+
+    # --- Bonus e Malus del Giorno ---
+    {"desc": "[GIORNO] Bonus del Giorno (pubblicato sul gruppo laurea, valido solo oggi)", "points": 10},
+    {"desc": "[GIORNO] Malus del Giorno (pubblicato sul gruppo laurea, valido solo oggi)", "points": -10},
 ]
 
 
 # =====================================================================
 # 2. INIZIALIZZAZIONE DELLO STATO
-# ---------------------------------------------------------------------
-# I dati condivisi (squadre, eventi, regolamento, impostazioni) sono
-# salvati in data.json, così tutti i partecipanti vedono gli stessi dati
-# e nulla si perde ricaricando la pagina.
-# st.session_state contiene solo lo stato del singolo browser
-# (login admin, squadra che si sta modificando).
 # =====================================================================
 @st.cache_resource
 def _get_lock():
@@ -136,7 +169,7 @@ def raddoppio_attivo(data):
 
 
 def compute_scores(data):
-    """Restituisce (punti per festeggiata, classifica ordinata)."""
+    """Restituisce (punti per festeggiato, classifica ordinata)."""
     double = raddoppio_attivo(data)
     fest_pts = {f: 0 for f in data["festeggiati"]}
     team_bonus = {}
@@ -180,7 +213,7 @@ def valida_squadra(data, name, owner, chosen, captain, exclude_id=None):
         errors.append("Inserisci il nome della squadra.")
     if not owner.strip():
         errors.append("Inserisci il tuo nome.")
-    if len(chosen) != 2:
+    if len(chosen) != 3:
         errors.append("Devi scegliere esattamente 3 festeggiati.")
     elif captain not in chosen:
         errors.append("Scegli il capitano tra i 3 festeggiati.")
@@ -204,7 +237,7 @@ def scegli_festeggiate(data, key, default_fest=None, default_capt=None):
     if len(chosen) == 3:
         idx = chosen.index(default_capt) if default_capt in chosen else 0
         captain = st.radio(
-            "Chi è il tuo capitano? (a fine gioco i suoi punti valgono doppio)",
+            "Chi è il tuo capitano? (i suoi punti valgono doppio)",
             chosen,
             index=idx,
             horizontal=True,
@@ -273,9 +306,9 @@ def classifica_live():
         )
         st.dataframe(df, hide_index=True)
         if raddoppio_attivo(data):
-            st.caption("⭐ = capitano, i suoi punti sono già conteggiati doppi.")
+            st.caption("⭐ = capitano, i suoi punti sono conteggiati doppi.")
         else:
-            st.caption("⭐ = capitano, i suoi punti verranno raddoppiati a fine gioco.")
+            st.caption("⭐ = capitano, i suoi punti verranno raddoppiati.")
 
     st.subheader("🎓 Punti dei festeggiati")
     cols = st.columns(len(data["festeggiati"]) or 1)
@@ -386,7 +419,7 @@ def form_modifica_squadra(data):
             errs = valida_squadra(d, name, t["owner"], chosen, captain, exclude_id=t["id"])
             if errs:
                 raise ValueError(errs[0])
-            t.update(name=name.strip(), festeggiate=chosen, captain=captain, updated=now_str())
+            t.update(name=name.strip(), festeggiati=chosen, captain=captain, updated=now_str())
 
         try:
             update_data(change)
@@ -406,7 +439,7 @@ def page_squadra():
         st.warning("🔒 Le iscrizioni sono chiuse: le squadre non si possono più creare né modificare. "
                    "Segui la classifica live!")
         return
-    st.markdown("Scegli **3 festeggiati** e nomina un **capitano**: a fine gioco i suoi punti valgono doppio. "
+    st.markdown("Scegli **3 festeggiati** e nomina un **capitano**: i suoi punti valgono doppio. "
                 "Puoi creare **una sola squadra** e modificarla finché le iscrizioni restano aperte.")
     tab_new, tab_edit = st.tabs(["✨ Crea squadra", "✏️ Modifica la mia squadra"])
     with tab_new:
@@ -427,24 +460,25 @@ Benvenuti al FantaLaurea!
 
 **Come si gioca**
 1. Crea la tua squadra scegliendo **3 festeggiati** tra {", ".join(data["festeggiati"])}.
-2. Nomina una dei 3 **capitano ⭐**: a fine gioco tutti i suoi punti (bonus e malus) vengono **raddoppiati**.
+2. Nomina uno dei 3 **capitano ⭐**: tutti i suoi punti (bonus e malus) vengono **raddoppiati**.
 3. Ogni persona può creare **una sola squadra**, modificabile finché non si chiudono le iscrizioni.
-4. Ogni volta che una festeggiata fa scattare un bonus o un malus, i punti vanno a tutte le squadre che l'hanno scelta.
-5. Al termine della festa vince la squadra con più punti (in caso di parità, vincono a pari merito).
+4. Ogni volta che un festeggiato fa scattare un bonus o un malus, i punti vanno a tutte le squadre che lo hanno scelto.
+5. Al termine della festa vince la squadra con più punti (in caso di parità, vince chi ha scelto il Capitano che ha ottenuto più punti singoli; se persiste, pari merito).
 
-📅 Date e Scadenze
-- Chiusura iscrizioni: Hai tempo fino alle 23:59 del 30 novembre per creare e salvare la tua squadra. Oltre questo termine, le formazioni verranno bloccate.
-- Inizio e fine gara: La competizione inizia ufficialmente il 1° dicembre e si conclude al termine dei festeggiamenti del 4 dicembre.
+📅 **Date e Scadenze**
+- **Chiusura iscrizioni:** Hai tempo fino alle 23:59 del 30 novembre per creare e salvare la tua squadra. Oltre questo termine, le formazioni verranno bloccate.
+- **Inizio e fine gara:** La competizione inizia ufficialmente il 1° dicembre e si conclude al termine dei festeggiamenti del 4 dicembre.
 
-📹 Validazione dei Bonus e Malus
+📹 **Validazione dei Bonus e Malus**
 - I punti vengono assegnati in base a ciò che accade prima, durante e dopo la discussione, la proclamazione e la festa del 4 dicembre.
-- La regola della prova video: Perché un bonus o un malus sia valido, l'azione deve essere documentata. I festeggiati (o i testimoni presenti) devono inviare un video o una foto chiara sul gruppo dedicato alla laurea per certificare l'accaduto.
-- Eventi a distanza: Questa regola vale in modo particolare per tutte le azioni compiute dal 1° dicembre in poi che non avvengono in presenza di tutti durante la discussione, la proclamazione o la festa finale. Senza prova sul gruppo, il punto non verrà assegnato!
+- **Regola della prova video:** Perché un bonus o un malus sia valido, l'azione deve essere documentata. I festeggiati (o i testimoni presenti) devono inviare un video o una foto chiara sul gruppo dedicato alla laurea per certificare l'accaduto.
+- **Eventi a distanza:** Vale in modo particolare per tutte le azioni compiute dal 1° dicembre in poi che non avvengono in presenza di tutti. Senza prova sul gruppo, il punto non verrà assegnato!
 
-NOTA:
-In caso di dubbi sull'assegnazione di un bonus o di un malus, il giudizio insindacabile spetta agli organizzatori del gioco (o al "VAR" del gruppo).
-Vince chi totalizza il punteggio più alto al termine dei festeggiamenti del 4 dicembre. In caso di parità, vince chi ha scelto il Capitano che ha ottenuto più punti singoli.
+🔥 **Regola Speciale: Bonus e Malus del Giorno**
+- **Validità giornaliera:** Ogni giorno verrà pubblicato sul gruppo della laurea un **Bonus** e un **Malus** validi **solo per quella giornata** (si resettano a fine giornata).
+- **A discapito degli organizzatori:** I bonus e i malus del giorno sono pensati appositamente per mettere in difficoltà e sfidare i festeggiati (es. sfide extra, penitenze o regole scomode solo per loro!).
 
+⚖️ **VAR e dubbi:** In caso di dubbi sull'assegnazione di un bonus o di un malus, il giudizio insindacabile spetta agli organizzatori del gioco (il "VAR" del gruppo).
 
 **Bonus e Malus**
 """
@@ -557,67 +591,57 @@ def admin_regolamento(data):
         [{"Descrizione": r["desc"], "Punti": r["points"]} for r in data["rules"]],
         columns=["Descrizione", "Punti"],
     )
-    edited = st.data_editor(
-        df,
-        num_rows="dynamic",
-        hide_index=True,
-        key="rules_editor",
-        column_config={
-            "Descrizione": st.column_config.TextColumn("Descrizione", required=True),
-            "Punti": st.column_config.NumberColumn("Punti", required=True, step=1),
-        },
-    )
-    if st.button("💾 Salva regolamento"):
+    edited = st.data_editor(df, num_rows="dynamic", use_container_width=True, hide_index=True)
+
+    if st.button("Salva regolamento 💾", type="primary"):
         new_rules = []
         for _, row in edited.iterrows():
-            desc, pts = row["Descrizione"], row["Punti"]
-            if pd.isna(desc) or not str(desc).strip():
-                continue
-            new_rules.append({"desc": str(desc).strip(), "points": 0 if pd.isna(pts) else int(pts)})
+            desc = str(row.get("Descrizione") or "").strip()
+            pts = row.get("Punti")
+            if desc and pd.notna(pts):
+                new_rules.append({"desc": desc, "points": int(pts)})
         update_data(lambda d: d.update(rules=new_rules))
-        st.success(f"Regolamento salvato ({len(new_rules)} regole).")
+        st.success("Regolamento salvato! ✅")
+        st.rerun()
 
 
 def admin_impostazioni(data):
     s = data["settings"]
-    with st.form("settings_form"):
-        aperte = st.toggle("Iscrizioni aperte (creazione e modifica squadre)", value=s["iscrizioni_aperte"])
-        raddoppio = st.toggle("Mostra subito il raddoppio del capitano in classifica", value=s["raddoppio_live"],
-                              help="Se disattivo, il raddoppio viene applicato quando dichiari il gioco concluso.")
-        concluso = st.toggle("Gioco concluso (mostra i vincitori)", value=s["gioco_concluso"])
-        if st.form_submit_button("💾 Salva impostazioni"):
-            update_data(lambda d: d["settings"].update(
-                iscrizioni_aperte=aperte, raddoppio_live=raddoppio, gioco_concluso=concluso))
-            st.success("Impostazioni salvate.")
+    iscrizioni = st.checkbox("Iscrizioni aperte", value=s["iscrizioni_aperte"])
+    raddoppio = st.checkbox("Raddoppio capitano attivo live", value=s["raddoppio_live"])
+    concluso = st.checkbox("Gioco concluso (mostra vincitori)", value=s["gioco_concluso"])
+
+    if st.button("Salva impostazioni ⚙️", type="primary"):
+        update_data(
+            lambda d: d["settings"].update(
+                iscrizioni_aperte=iscrizioni,
+                raddoppio_live=raddoppio,
+                gioco_concluso=concluso,
+            )
+        )
+        st.success("Impostazioni aggiornate! ✅")
 
 
 def page_admin():
-    if not st.session_state.is_admin:
-        st.error("Accesso riservato all'admin.")
-        return
     st.title("⚙️ Pannello Admin")
-    if get_admin_password() == DEFAULT_ADMIN_PASSWORD:
-        st.warning("Stai usando la password di default: cambiala in .streamlit/secrets.toml.")
     data = load_data()
-    s = data["settings"]
-    st.caption(f"Iscrizioni: {'🟢 aperte' if s['iscrizioni_aperte'] else '🔒 chiuse'} · "
-               f"Gioco: {'🏁 concluso' if s['gioco_concluso'] else '▶️ in corso'}")
-
-    tabs = st.tabs(["🎯 Punti", "🧾 Storico", "👥 Squadre", "📜 Regole", "🔧 Impostazioni"])
-    with tabs[0]:
+    t1, t2, t3, t4, t5 = st.tabs(
+        ["➕ Assegna punti", "🕒 Storico", "👥 Squadre", "📜 Regolamento", "🔧 Impostazioni"]
+    )
+    with t1:
         admin_assegna_punti(data)
-    with tabs[1]:
+    with t2:
         admin_storico(data)
-    with tabs[2]:
+    with t3:
         admin_squadre(data)
-    with tabs[3]:
+    with t4:
         admin_regolamento(data)
-    with tabs[4]:
+    with t5:
         admin_impostazioni(data)
 
 
 # =====================================================================
-# ROUTING DELLE PAGINE
+# 8. AVVIO APP
 # =====================================================================
 if menu == "🏆 Classifica Live":
     page_classifica()
@@ -625,5 +649,5 @@ elif menu == "👥 La tua Squadra":
     page_squadra()
 elif menu == "📜 Regolamento":
     page_regolamento()
-elif menu == "⚙️ Pannello Admin":
+elif menu == "⚙️ Pannello Admin" and st.session_state.is_admin:
     page_admin()
