@@ -104,6 +104,13 @@ def _supabase_conf():
         return None
 
 
+def _check(r):
+    """Mostra il codice d'errore di Supabase invece del traceback nascosto."""
+    if not r.ok:
+        st.error(f"Errore Supabase {r.status_code}: {r.text[:300]}")
+        st.stop()
+
+
 def _read():
     conf = _supabase_conf()
     data = None
@@ -115,7 +122,7 @@ def _read():
             headers={"apikey": key},
             timeout=10,
         )
-        r.raise_for_status()
+        _check(r)
         rows = r.json()
         if rows and rows[0]["data"]:
             data = rows[0]["data"]
@@ -147,7 +154,7 @@ def _write(data):
             json={"id": "main", "data": data},
             timeout=10,
         )
-        r.raise_for_status()
+        _check(r)
         return
     tmp = DATA_FILE.with_suffix(".tmp")
     with tmp.open("w", encoding="utf-8") as f:
