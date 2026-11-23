@@ -28,44 +28,41 @@ FESTEGGIATE_DEFAULT = ["DANILA", "MIRIANA", "MARTA", "GIORGIA", "PIETRO"]
 # QUI VANNO INSERITI MALUS, BONUS, REGOLE PERSONALI E DEL GIORNO
 RULES_DEFAULT = [
     # --- Regole base ---
-    {"desc": "Proclamazione con lode", "points": 50},
-    {"desc": "Cade la corona d'alloro", "points": -20},
-    {"desc": "Pronuncia la parola 'Ansia' nei primi 5 minuti", "points": 15},
-    {"desc": "Commuove almeno un parente stretto", "points": 30},
-    {"desc": "Arriva in ritardo alla discussione", "points": -30},
-    {"desc": "Festeggiata/o brilla/allegra prima della proclamazione", "points": 40},
 
     # --- Malus ---
+    {"desc": "Cade la corona d'alloro", "points": -20},
     {"desc": "Scivolone / gaffe della giornata (rovescia qualcosa, sbaglia strada, perde un oggetto o gaffe epica)", "points": -10},
     {"desc": "Voto sotto le aspettative (inferiore a quello pronosticato)", "points": -10},
-    {"desc": "Panico da microfono (si blocca, perde il filo o va in confusione per più di 15 secondi)", "points": -5},
+    {"desc": "Panico da microfono (si blocca, perde il filo o va in confusione per più di 15 secondi durante discussione)", "points": -5},
     {"desc": "“Non saprei / non mi ricordo” a una domanda della commissione", "points": -5},
     {"desc": "Ritardo rispetto all'orario previsto o fa correre il gruppo", "points": -5},
     {"desc": "Disastro tecnico (slide non si aprono, formato sballato o cade connessione/proiezione)", "points": -5},
 
     # --- Bonus ---
     {"desc": "L’intervista improvvisata (ferma un passante e chiede un consiglio di vita con foto/video)", "points": 15},
+    {"desc": "Pronuncia la parola 'Ansia' nei primi 5 minuti", "points": +15},
+    {"desc": "Commuove almeno un parente stretto", "points": +30},
     {"desc": "Il “Dottore!” in pubblico (fa un inchino o giravolta quando viene nominata/o Dottoressa/Dottore)", "points": 10},
-    {"desc": "Lode d’oro (ottiene il 110 e lode)", "points": 15},
-    {"desc": "Voto top (voto finale tra 107 e 109)", "points": 10},
-    {"desc": "Applausi a scena aperta o complimenti espliciti della commissione", "points": 5},
-    {"desc": "Puntualità svizzera (in aula pronta/o con almeno 15 minuti di anticipo)", "points": 5},
-    {"desc": "Zero intoppi tecnici (slide/video funzionano al primo colpo)", "points": 5},
-    {"desc": "Risposta da manuale a una domanda difficile della commissione", "points": 5},
-    {"desc": "La parola magica (inizia qualsiasi brindisi con la parola 'capibara')", "points": 10},
-    {"desc": "Cambio d’abito o accessorio segreto scelto dal gruppo mostrato a fine discussione", "points": 10},
+    {"desc": "Lode d’oro (ottiene il 110 e lode)", "points": +15},
+    {"desc": "Voto top (voto finale tra 107 e 109)", "points": +10},
+    {"desc": "Applausi a scena aperta o complimenti espliciti della commissione", "points": +5},
+    {"desc": "Puntualità svizzera (in aula pronta/o con almeno 15 minuti di anticipo)", "points": +5},
+    {"desc": "Zero intoppi tecnici (slide/video funzionano al primo colpo)", "points": +5},
+    {"desc": "Risposta da manuale a una domanda difficile della commissione", "points": +5},
+    {"desc": "La parola magica (inizia qualsiasi brindisi con la parola 'capibara')", "points": +10},
+    {"desc": "Cambio d’abito o accessorio segreto scelto dal gruppo mostrato a fine discussione", "points": +10},
 
     # --- Bonus / Malus personali ---
-    {"desc": "[MIRIANA] Parla di Risparmio Casa ('il paese delle meraviglie')", "points": 5},
+    {"desc": "[MIRIANA] Parla di Risparmio Casa ('il paese delle meraviglie')", "points": +5},
     {"desc": "[MIRIANA] Parla delle disavventure per trovare il vestito perfetto", "points": -5},
     {"desc": "[DANILA] Dice di avere mal di testa", "points": -5},
-    {"desc": "[DANILA] Si lamenta di Alessandro", "points": 5},
-    {"desc": "[MARTA] Dice 'paga Miroglio'", "points": 5},
+    {"desc": "[DANILA] Si lamenta di Alessandro", "points": +5},
+    {"desc": "[MARTA] Dice 'paga Miroglio'", "points": +5},
     {"desc": "[MARTA] Dice che il ladro vive a Moncalieri", "points": -5},
-    {"desc": "[GIORGIA] Dice 'belin' o 'zio belin' (tutte le varianti)", "points": 5},
+    {"desc": "[GIORGIA] Dice 'belin' o 'zio belin' (tutte le varianti)", "points": +5},
     {"desc": "[GIORGIA] Parla dei suoi affari (es. lamentela o entusiasmo per il prezzo di un volo)", "points": -5},
-    {"desc": "[PIETRO] Dice 'gas'", "points": 5},
-    {"desc": "[PIETRO] Bonus/malus personale extra (da definire)", "points": 0},
+    {"desc": "[PIETRO] Dice 'gas'", "points": +5},
+    {"desc": "[PIETRO] Non trova una soluzione ad un problema della festa", "points": -5},
 
     # --- Bonus e Malus del Giorno ---
     {"desc": "[GIORNO] Bonus del Giorno (pubblicato sul gruppo laurea, valido solo oggi)", "points": 10},
