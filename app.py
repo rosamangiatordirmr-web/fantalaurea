@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import requests
 import streamlit as st
 
 # =====================================================================
@@ -39,10 +40,10 @@ RULES_DEFAULT = [
     {"desc": "Disastro tecnico (slide non si aprono, formato sballato o cade connessione/proiezione)", "points": -5},
 
     # --- Bonus ---
-    {"desc": "L’intervista improvvisata (ferma un passante e chiede un consiglio di vita con foto/video)", "points": 15},
+    {"desc": "L’intervista improvvisata (ferma un passante e chiede un consiglio di vita con foto/video)", "points": +15},
     {"desc": "Pronuncia la parola 'Ansia' nei primi 5 minuti", "points": +15},
     {"desc": "Commuove almeno un parente stretto", "points": +30},
-    {"desc": "Il “Dottore!” in pubblico (fa un inchino o giravolta quando viene nominata/o Dottoressa/Dottore)", "points": 10},
+    {"desc": "Il “Dottore!” in pubblico (fa un inchino o giravolta quando viene nominata/o Dottoressa/Dottore)", "points": +10},
     {"desc": "Lode d’oro (ottiene il 110 e lode)", "points": +15},
     {"desc": "Voto top (voto finale tra 107 e 109)", "points": +10},
     {"desc": "Applausi a scena aperta o complimenti espliciti della commissione", "points": +5},
@@ -95,20 +96,59 @@ def default_data():
     }
 
 
+def _supabase_conf():
+    """Restituisce (url, chiave) se i secrets Supabase sono presenti, altrimenti None."""
+    try:
+        return st.secrets["supabase_url"].rstrip("/"), st.secrets["supabase_key"]
+    except Exception:
+        return None
+
+
 def _read():
-    if not DATA_FILE.exists():
+    conf = _supabase_conf()
+    data = None
+    if conf:
+        url, key = conf
+        r = requests.get(
+            f"{url}/rest/v1/store",
+            params={"id": "eq.main", "select": "data"},
+            headers={"apikey": key},
+            timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json()
+        if rows and rows[0]["data"]:
+            data = rows[0]["data"]
+    elif DATA_FILE.exists():
+        with DATA_FILE.open(encoding="utf-8") as f:
+            data = json.load(f)
+
+    if not data:
         return default_data()
-    with DATA_FILE.open(encoding="utf-8") as f:
-        data = json.load(f)
     base = default_data()
-    for key, value in base.items():
-        data.setdefault(key, value)
-    for key, value in base["settings"].items():
-        data["settings"].setdefault(key, value)
+    for k, value in base.items():
+        data.setdefault(k, value)
+    for k, value in base["settings"].items():
+        data["settings"].setdefault(k, value)
     return data
 
 
 def _write(data):
+    conf = _supabase_conf()
+    if conf:
+        url, key = conf
+        r = requests.post(
+            f"{url}/rest/v1/store",
+            headers={
+                "apikey": key,
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates,return=minimal",
+            },
+            json={"id": "main", "data": data},
+            timeout=10,
+        )
+        r.raise_for_status()
+        return
     tmp = DATA_FILE.with_suffix(".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -264,7 +304,7 @@ with st.sidebar.expander("🔐 Area admin", expanded=st.session_state.is_admin):
         pwd = st.text_input("Password", type="password", key="admin_pwd_input")
         if st.button("Entra", key="admin_login"):
             if not admin_pwd:
-                st.error("Password admin non configurata in .streamlit/secrets.toml")
+                st.error("Password admin non configurata nei Secrets")
             elif hmac.compare_digest(pwd.encode(), str(admin_pwd).encode()):
                 st.session_state.is_admin = True
                 st.rerun()
